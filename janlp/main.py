@@ -24,4 +24,5 @@ async def root():
 
 @app.on_event("startup")
 async def startup_event():
+    # Load it once at the start of the service, and use the instance in the memory.
     utils.load_spacy_model()
