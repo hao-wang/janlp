@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "janlp"  # the directory of the project source root (here `janlp`)
+version = "0.1.0"
+description = "A FastAPI application for Japanese tokenization and dictionary lookup"
+authors = ["Hao Wang <hwang.phy@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111.1"
+numpy = "^1.26"
+uvicorn = "^0.30.0"
+pydantic = "^2.8.2"
+spacy = "^3.7"
+ja-ginza-electra = "^5.2"
+torch = "~2.2.2"
+httptools = "^0.5.0"
+jamdict = "^0.1a11"
+jamdict-data = "^1.5"
+
+[tool.poetry.dev-dependencies]
+pytest = "^8.3.2"
+
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
