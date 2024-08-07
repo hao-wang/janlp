@@ -12,7 +12,9 @@ RUN apt-get update && apt-get install -y \
 #?? unidic是unidic-py包（https://github.com/polm/unidic-py），对
 # RUN bash -c "python -m unidic download"
 # If there is a network error use local copies
-COPY ./unidic ./ 
+# The latter ./dicdir is a must, otherwise only the contents of dicdir 
+# will be copied to /app 
+COPY dicdir/ ./dicdir/ 
 
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python && \
   cd /usr/local/bin && \
@@ -41,5 +43,6 @@ COPY ./janlp ./janlp
 #?? 设置后可以解决找不到janlp module的问题
 ENV PYTHONPATH=/app
 
+COPY ./start-reload.sh .
 # Command to run the application
 CMD ["fastapi", "run", "janlp/main.py", "--host", "0.0.0.0", "--port", "8000"]
