@@ -1,13 +1,11 @@
 from pydantic import BaseModel
 
-class SentenceInput(BaseModel):
-    sentence: str
 
-class TokenInfo(BaseModel):
-    surface: str
-    dictionary_form: str
-    part_of_speech: str
-    grammar_point: str | None
-
-class DictionaryLookup(BaseModel):
-    word: str
+class Token(BaseModel):
+    lemma: str
+    surface: str | None = None
+    pos: str | None = None
+    pron_lemma: str | None = None
+    pron: str | None = None
+    pos_ja: str | None = None
+    meanings: list[str] | None = None
