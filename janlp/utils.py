@@ -1,16 +1,22 @@
 from pathlib import Path
 
 import fugashi
+import unidic
 from jamdict import Jamdict
 
-import unidic
-from janlp.models import Token
+from janlp.models import Token, TokenLookupResult
 
 # TODO: jam.lookup() may give char's meaning if the word is not found. Deal with that.
 jam = Jamdict()
 # Tagger has a startup cost (loading dict etc.), so run once at the very beginning.
 unidic.DICDIR = Path(__file__).parent.parent / "dicdir"
-tagger = fugashi.Tagger()
+tagger = None
+
+
+def init_tagger():
+    "Run once when service starts"
+    global tagger
+    tagger = fugashi.Tagger()
 
 
 def tokenize(sentence: str) -> list[Token]:
@@ -49,9 +55,9 @@ def tokenize(sentence: str) -> list[Token]:
 def lookup_word(
     *,
     lemma: str,
-    pron_lemma: str | None = None,
+    pron_lemma: str,
     pos: str | None = None,
-) -> Token:
+) -> TokenLookupResult:
     """Given a Japanese lemma, it's pronunciation (in Katagana or Hiragana) and part-of-speech
     (mapped to English & Romaji), look up it's meanings.
 
@@ -60,6 +66,7 @@ def lookup_word(
     """
     # Why not lookup(lemma)? 'Cause Unidic lemma for カナダ would be カナダ-canada
     result = jam.lookup(lemma)
+
     if not result.entries:
         print("No entries for lemma")
         result = jam.lookup(pron_lemma)
@@ -84,12 +91,9 @@ def lookup_word(
                     (pron_lemma is None) or pron_lemma in reading_forms  # 片假名
                 )
             ) and ((pos is None) or (pos in pos_str)):
-                # print(f"Entry {idx}: ", kanji_forms, reading_forms, pos_str)
                 meanings.extend([str(sg) for sg in sense.gloss])
 
-    return Token(
-        lemma=lemma, pos=pos, pron_lemma=pron_lemma, meanings=sorted(set(meanings))
-    )
+    return TokenLookupResult(meanings=sorted(set(meanings)))
 
 
 def is_kanji(char):
