@@ -19,35 +19,85 @@ we get
 ```json
 [
   {
+    "lemma": "言う",
     "surface": "いえ",
-    "dictionary_form": "いえ",
-    "part_of_speech": "INTJ",
-    "grammar_point": null
+    "pos": "verb",
+    "pron_lemma": "イエル",
+    "pron": "イエ",
+    "pos_ja": "動詞",
+    "meanings": null
   },
   {
+    "lemma": "、",
     "surface": "、",
-    "dictionary_form": "、",
-    "part_of_speech": "PUNCT",
-    "grammar_point": null
+    "pos": "",
+    "pron_lemma": "*",
+    "pron": "*",
+    "pos_ja": "補助記号",
+    "meanings": null
   },
   {
+    "lemma": "錯覚",
     "surface": "錯覚",
-    "dictionary_form": "錯覚",
-    "part_of_speech": "NOUN",
-    "grammar_point": null
+    "pos": "noun",
+    "pron_lemma": "サッカク",
+    "pron": "サッカク",
+    "pos_ja": "名詞",
+    "meanings": null
   },
- ...
   {
+    "lemma": "で",
+    "surface": "で",
+    "pos": "particle",
+    "pron_lemma": "デ",
+    "pron": "デ",
+    "pos_ja": "助詞",
+    "meanings": null
+  },
+  {
+    "lemma": "は",
+    "surface": "は",
+    "pos": "particle",
+    "pron_lemma": "ワ",
+    "pron": "ワ",
+    "pos_ja": "助詞",
+    "meanings": null
+  },
+  {
+    "lemma": "有る",
+    "surface": "あり",
+    "pos": "verb",
+    "pron_lemma": "アル",
+    "pron": "アリ",
+    "pos_ja": "動詞",
+    "meanings": null
+  },
+  {
+    "lemma": "ます",
+    "surface": "ませ",
+    "pos": "auxiliary",
+    "pron_lemma": "マス",
+    "pron": "マセ",
+    "pos_ja": "助動詞",
+    "meanings": null
+  },
+  {
+    "lemma": "ず",
     "surface": "ん",
-    "dictionary_form": "ぬ",
-    "part_of_speech": "AUX",
-    "grammar_point": null
+    "pos": "auxiliary",
+    "pron_lemma": "ヌ",
+    "pron": "ン",
+    "pos_ja": "助動詞",
+    "meanings": null
   },
   {
+    "lemma": "。",
     "surface": "。",
-    "dictionary_form": "。",
-    "part_of_speech": "PUNCT",
-    "grammar_point": null
+    "pos": "",
+    "pron_lemma": "*",
+    "pron": "*",
+    "pos_ja": "補助記号",
+    "meanings": null
   }
 ]
 ```
@@ -58,7 +108,8 @@ Return meaning of a Japanese word in English. E.g., payload
 
 ```json
 {
-  "word": "ある"
+  "lemma": "ある",
+  "pos": "verb"
 }
 ```
 
@@ -66,25 +117,26 @@ leads to
 
 ```json
 {
-  "word": "ある",
+  "lemma": "ある",
+  "surface": null,
+  "pos": "verb",
+  "pron_lemma": null,
+  "pron": null,
+  "pos_ja": null,
   "meanings": [
-    {
-      "lang": "eng",
-      "gend": "",
-      "text": "to be"
-    },
-    {
-      "lang": "eng",
-      "gend": "",
-      "text": "to exist"
-    },
-	...
+    "to be",
+    "to be equipped with",
+    "to be located",
+    "to come about",
+    "to exist",
+    "to happen",
+    "to have",
+    "to live"
   ]
 }
 ```
 
 ## Docker
 
-Use Tsinghua mirror: `docker build --build-arg LOC=CN -t janlp .`, otherwise ignore the `--buid-arg LOC=CN` part.
-
-Start the service with `docker run -p YOUR_PORT janlp`, then check `localhost:YOUR_PORT/docs`.
+1. Get the image: `docker pull hosdce/janlp:latest`
+1. Start the service: e.g., `docker run janlp`
