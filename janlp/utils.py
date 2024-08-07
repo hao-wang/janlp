@@ -1,11 +1,15 @@
+from pathlib import Path
+
 import fugashi
 from jamdict import Jamdict
 
+import unidic
 from janlp.models import Token
 
 # TODO: jam.lookup() may give char's meaning if the word is not found. Deal with that.
 jam = Jamdict()
 # Tagger has a startup cost (loading dict etc.), so run once at the very beginning.
+unidic.DICDIR = Path(__file__).parent.parent / "dicdir"
 tagger = fugashi.Tagger()
 
 
@@ -25,6 +29,7 @@ def tokenize(sentence: str) -> list[Token]:
         "接尾詞": "suffix",
         "代名詞": "pronoun",
         "数詞": "numeral",
+        "補助記号": "symbol",
     }
     result = tagger(sentence)
     tokens = [
