@@ -9,7 +9,11 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
+#?? unidic是unidic-py包（https://github.com/polm/unidic-py），对
+# RUN bash -c "python -m unidic download"
+# If there is a network error use local copies
+COPY ./unidic ./ 
+
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python && \
   cd /usr/local/bin && \
   ln -s /opt/poetry/bin/poetry && \
@@ -31,8 +35,6 @@ COPY ./pyproject.toml ./poetry.lock* ./
 # ?? 变量不加引号，变量的值会被分割成单词；加了的话就会被当成一个整体
 # ?? 单双引号的区别：双引号内的变量会被解析，单引号就不会（比如echo '$var'就会打印'$var'）
 RUN bash -c "poetry install"
-#?? unidic是unidic-py包（https://github.com/polm/unidic-py），对
-RUN bash -c "python -m unidic download"
 
 
 COPY ./janlp ./janlp
