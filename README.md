@@ -1,5 +1,7 @@
 # Japanese NLP
 
+> If you're trying to rebuild the image, mind that the unidic need to be download first and put the dicdir/ at code root. 
+
 ## Features
 
 FastAPI backed services:
@@ -140,3 +142,7 @@ leads to
 
 1. Get the image: `docker pull hosdce/janlp:latest`
 1. Start the service: e.g., `docker run janlp`
+
+TODO:
+
+1. build image & start service with `docker compose up`
