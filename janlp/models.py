@@ -10,9 +10,14 @@ class Token(BaseModel):
     pos_ja: str | None = None
 
 
+class TokenWithMeanings(Token):
+    meanings: list[str] | None = None
+
+
 class TokenQuery(BaseModel):
     lemma: str
-    pron_lemma: str
+    surface: str | None = None
+    pron_lemma: str | None = None
     pos: str | None = None
 
 
