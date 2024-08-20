@@ -1,6 +1,6 @@
 # Japanese NLP
 
-> If you're trying to rebuild the image, mind that the unidic need to be download first and put the dicdir/ at code root. 
+> If you're trying to rebuild the image, mind that the unidic need to be download first and put the dicdir/ at code root.
 
 ## Features
 
@@ -8,7 +8,7 @@ FastAPI backed services:
 
 ### `POST /tokenize`:
 
-Split a Japanese sentence into tokens. E.g., with payload
+Split a Japanese sentence into tokens. E.g., with request payload
 
 ```json
 {
@@ -16,7 +16,7 @@ Split a Japanese sentence into tokens. E.g., with payload
 }
 ```
 
-we get
+Response
 
 ```json
 [
@@ -106,7 +106,9 @@ we get
 
 ### `POST /lookup`
 
-Return meaning of a Japanese word in English. E.g., payload
+Return meaning of a Japanese word in English. E.g.,
+
+Request payload
 
 ```json
 {
@@ -115,7 +117,7 @@ Return meaning of a Japanese word in English. E.g., payload
 }
 ```
 
-leads to
+Response
 
 ```json
 {
@@ -136,6 +138,72 @@ leads to
     "to live"
   ]
 }
+```
+
+### `POST /analyze`
+
+Request
+
+```json
+{
+  "sentence": "私は一日に100ユーロ稼ぎます。"
+}
+```
+
+Response
+
+```json
+[
+  {
+    "surface": "私",
+    "lemma": "私-代名詞",
+    "pron_lemma": "ワタクシ",
+    "pron": "ワタクシ",
+    "pos": "pronoun",
+    "pos_ja": "代名詞",
+    "meanings": [
+      "I",
+      "me",
+      "you"
+    ]
+  },
+  {
+    "surface": "は",
+    "lemma": "は",
+    "pron_lemma": "ワ",
+    "pron": "ワ",
+    "pos": "particle",
+    "pos_ja": "助詞",
+    "meanings": null
+  },
+  {
+    "surface": "一",
+    "lemma": "一",
+    "pron_lemma": "イチ",
+    "pron": "イチ",
+    "pos": "noun",
+    "pos_ja": "名詞",
+    "meanings": [
+      "(not) even",
+      "a (single)",
+      "ace (playing card)",
+      "beginning",
+      "best",
+      "bottom string (on a shamisen, etc.)",
+      "first",
+      "for one thing",
+      "foremost",
+      "just (e.g. \"just try it\")",
+      "one (of many)",
+      "one type of",
+      "only",
+      "same (mind, path, etc.)",
+      "some kind of",
+      "start"
+    ]
+  },
+  ...
+]
 ```
 
 ## Docker
