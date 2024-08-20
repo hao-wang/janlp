@@ -8,8 +8,10 @@ from janlp.models import Token, TokenLookupResult, TokenQuery, TokenWithMeanings
 
 app = FastAPI()
 
+# basicConfig affects the whole project, including JamDict
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 
 class SentenceInput(BaseModel):

@@ -3,8 +3,8 @@ from pydantic import BaseModel
 
 class Token(BaseModel):
     surface: str
-    lemma: str
-    pron_lemma: str
+    lemma: str | None = None
+    pron_lemma: str | None = None
     pron: str | None = None
     pos: str | None = None
     pos_ja: str | None = None
@@ -15,7 +15,7 @@ class TokenWithMeanings(Token):
 
 
 class TokenQuery(BaseModel):
-    lemma: str
+    lemma: str | None = None
     surface: str | None = None
     pron_lemma: str | None = None
     pos: str | None = None

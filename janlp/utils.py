@@ -9,7 +9,7 @@ from jamdict import Jamdict
 from janlp.models import Token, TokenLookupResult, TokenWithMeanings
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 # TODO: jam.lookup() may give char's meaning if the word is not found. Deal with that.
 jam = None
@@ -29,7 +29,7 @@ def init_jamdict():
 
 
 def tokenize(sentence: str) -> list[Token]:
-    """Fugashi将句子划分为token。读音都是片假名。"""
+    """Fugashi splits the sentence into token. Pronunciations are in *Katakana*."""
     pos_mapping = {
         "名詞": "noun",
         "動詞": "verb",
@@ -66,7 +66,7 @@ def tokenize(sentence: str) -> list[Token]:
 
 def lookup_word(
     *,
-    lemma: str,
+    lemma: str | None = None,
     surface: str | None = None,
     pron_lemma: str | None = None,
     pos: str | None = None,
@@ -74,37 +74,40 @@ def lookup_word(
     """Given a Japanese lemma, it's pronunciation (in Katagana) and part-of-speech
     (mapped to English & Romaji), look up it's meanings.
 
-    1. 如果surface存在且为片假名，直接查询，而不是使用lemma（会带英文后缀）和pron_lemma（读音被转成
-    平假名后查不到）
-    2. 如果lemma查不到——（可能是给的lemma不对？否则不应该）——则查询pron_lemma
-        1. 一种问题是lemma引入了多余的信息导致的，比如`引く-他動詞`，这时候先用‘-’分割得到第一部分
-    3. Jamdict的读音更可能是平假名，在查询tokenize的结果，需要先进行对齐。
+    1. Search with surface if it's katakana (instead of lemma - with English suffix, or
+    pron_lemma - no search result once converted to Hiragana);
+    2. If no result for lemma, search for pron_lemma
+        1. e.g., lemma==`引く-他動詞`, but in this case get the part before '-' will do
+    3. Jamdict's words' pronunciations are in Hiragana, DIFFERS from Fugashi's tokens
+    4. Number strings have no lemma or pron_lemma, use surface
 
 
     TODO: look up for わたし returns many with other prons, filter them.
     """
-    # 预处理
+    # pre-process
     if lemma:
         lemma = lemma.split("-")[0]
     if pron_lemma:
         pron_lemma = jaconv.kata2hira(pron_lemma)  # convert to hiragana
 
-    # 分情况获取释义
-    if surface is not None and any([is_katakana(c) for c in surface]):
+    # get look up result
+    if surface is not None and (
+        any([is_katakana(c) for c in surface]) or surface.isdigit()
+    ):
         # Why not lookup(lemma)? 'Cause Unidic lemma for カナダ would be "カナダ-Canada"
         result = jam.lookup(surface)
     else:
         result = jam.lookup(lemma)
 
         if not result.entries:
-            logger.debug(f"!!!\n\nNo entries for lemma {lemma}\n\n")
+            logger.warning(f"No entries for lemma {lemma}")
             if pron_lemma:
                 result = jam.lookup(pron_lemma)
 
-    # 过滤释义
+    # filter
     meanings = []
     for idx, entry in enumerate(result.entries):
-        logger.debug(idx, entry.kanji_forms, entry.kana_forms)
+        logger.debug(f"{idx}: {entry.kanji_forms}, {entry.kana_forms}")
         for sense in entry.senses:
             kanji_forms = [k.text for k in entry.kanji_forms]
             reading_forms = [r.text for r in entry.kana_forms]
@@ -116,12 +119,12 @@ def lookup_word(
             if (
                 (
                     (lemma is None)
-                    or (lemma in kanji_forms)  # 汉字
-                    or (lemma in reading_forms)  # 平假名
+                    or (lemma in kanji_forms)  # kanji
+                    or (lemma in reading_forms)  # hiragana
                 )
                 or (
                     (pron_lemma is None)
-                    or pron_lemma in reading_forms  # 已统一为平假名
+                    or pron_lemma in reading_forms  # normalized to hiragana
                 )
             ) and ((pos is None) or (pos in pos_str)):
                 # logger.debug(pos_str, sense.gloss, reading_forms)
@@ -147,7 +150,11 @@ def get_glossary(
 
     for token in tokens:
         token_wm = TokenWithMeanings(**token.__dict__)
-        if exclude_pos is None or token.pos not in exclude_pos and token.lemma.strip():
+        if (
+            exclude_pos is None
+            or token.pos not in exclude_pos
+            and ((token.lemma and token.lemma.strip()) or token.surface)
+        ):
             logger.debug(
                 f"Token({token.surface}, {token.pos}, {token.pos}[{token.pos_ja}])"
             )
