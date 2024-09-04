@@ -1,0 +1,6 @@
+services:
+  janlp:
+    ports:
+      - "8000:8000"
+    build:
+      context: .

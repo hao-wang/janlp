@@ -1,0 +1,8 @@
+services:
+  janlp:
+    ports:
+      - "8005:8000"
+    volumes:
+      - ./janlp:/app/janlp
+    command:
+      ["fastapi", "dev", "janlp/main.py", "--host", "0.0.0.0", "--port", "8000"]
