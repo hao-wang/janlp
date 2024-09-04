@@ -1,5 +1,4 @@
 import logging
-
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -8,7 +7,6 @@ from janlp.models import Token, TokenLookupResult, TokenQuery, TokenWithMeanings
 
 app = FastAPI()
 
-# basicConfig affects the whole project, including JamDict
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)

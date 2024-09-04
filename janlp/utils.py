@@ -9,11 +9,13 @@ from jamdict import Jamdict
 from janlp.models import Token, TokenLookupResult, TokenWithMeanings
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 # TODO: jam.lookup() may give char's meaning if the word is not found. Deal with that.
 jam = None
-unidic.DICDIR = Path(__file__).parent.parent / "dicdir"
+dic_dir = Path.cwd() / "dicdir"
+if dic_dir.exists():
+    unidic.DICDIR = dic_dir
 tagger = None
 
 
@@ -74,13 +76,9 @@ def lookup_word(
     """Given a Japanese lemma, it's pronunciation (in Katagana) and part-of-speech
     (mapped to English & Romaji), look up it's meanings.
 
-    1. Search with surface if it's katakana (instead of lemma - with English suffix, or
-    pron_lemma - no search result once converted to Hiragana);
-    2. If no result for lemma, search for pron_lemma
-        1. e.g., lemma==`引く-他動詞`, but in this case get the part before '-' will do
+    1. Search with lemma if it's not None;
+    2. Otherwise, search with surface(including numbers);
     3. Jamdict's words' pronunciations are in Hiragana, DIFFERS from Fugashi's tokens
-    4. Number strings have no lemma or pron_lemma, use surface
-
 
     TODO: look up for わたし returns many with other prons, filter them.
     """
@@ -88,24 +86,18 @@ def lookup_word(
     if lemma:
         lemma = lemma.split("-")[0]
     if pron_lemma:
-        pron_lemma = jaconv.kata2hira(pron_lemma)  # convert to hiragana
+        pron_lemma = jaconv.kata2hira(pron_lemma)
 
-    # get look up result
-    if surface is not None and (
-        any([is_katakana(c) for c in surface]) or surface.isdigit()
-    ):
-        # Why not lookup(lemma)? 'Cause Unidic lemma for カナダ would be "カナダ-Canada"
-        result = jam.lookup(surface)
-    else:
+    result = None
+    if lemma:
         result = jam.lookup(lemma)
+    elif surface:
+        result = jam.lookup(surface)
 
-        if not result.entries:
-            logger.warning(f"No entries for lemma {lemma}")
-            if pron_lemma:
-                result = jam.lookup(pron_lemma)
-
-    # filter
     meanings = []
+    if result is None:
+        return TokenLookupResult(meanings=[])
+
     for idx, entry in enumerate(result.entries):
         logger.debug(f"{idx}: {entry.kanji_forms}, {entry.kana_forms}")
         for sense in entry.senses:
@@ -114,7 +106,7 @@ def lookup_word(
             pos_str = ", ".join([spe.lower() for spe in sense.pos])
 
             # Check if the gloss matches the criteria
-            # 1. lemma in kanji_forms or pron_lemma in reading_forms, and
+            # 1. (lemma in kanji_forms, or pron_lemma in reading_forms) and
             # 2. pos string contained in any element of sense.pos(list)
             if (
                 (
@@ -127,7 +119,6 @@ def lookup_word(
                     or pron_lemma in reading_forms  # normalized to hiragana
                 )
             ) and ((pos is None) or (pos in pos_str)):
-                # logger.debug(pos_str, sense.gloss, reading_forms)
                 meanings.extend([str(sg) for sg in sense.gloss])
 
     return TokenLookupResult(meanings=sorted(set(meanings)))
@@ -145,26 +136,24 @@ def get_glossary(
             "symbol",
         ]
 
-    logger.debug(f"Analyze {sentence} excluding {exclude_pos}")
+    logger.debug(f"Analyzing {sentence}, add meanings(excluding {exclude_pos})")
     tokens = tokenize(sentence)
 
     for token in tokens:
+        logger.debug(f"Token dict: {token}")
         token_wm = TokenWithMeanings(**token.__dict__)
         if (
             exclude_pos is None
             or token.pos not in exclude_pos
             and ((token.lemma and token.lemma.strip()) or token.surface)
         ):
-            logger.debug(
-                f"Token({token.surface}, {token.pos}, {token.pos}[{token.pos_ja}])"
-            )
             result = lookup_word(
                 lemma=token.lemma,
                 pron_lemma=token.pron_lemma,
                 pos=token.pos,
                 surface=token.surface,
             )
-            logger.debug(f"lookup result: {result}")
+            logger.debug(f"Lookup result: {result}")
             token_wm.meanings = result.meanings
 
         glossary.append(token_wm)
