@@ -45,6 +45,7 @@ def fetch_glossary(input: SentenceInput):
         return utils.get_glossary(input.sentence, input.exclude_pos)
     except Exception as e:
         logger.error(e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.on_event("startup")
