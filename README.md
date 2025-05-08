@@ -1,10 +1,28 @@
 # Japanese NLP
 
-> If you're trying to rebuild the image, mind that the unidic need to be download first and put the dicdir/ at code root.
+FastAPI backed Japanese NLP services (tokenize, lookup token, analyze sentence).
+
+## How to run
+
+Clone the repo and run in the project root:
+
+```bash
+# Install dependencies
+poetry install
+
+# Run the service
+fastapi run janlp/main.py
+```
+
+You can visit the api's at `http://localhost:8000/docs`
+
+Or try the api with curl, e.g.,
+
+```bash
+curl -X POST "http://localhost:8000/tokenize" -H "Content-Type: application/json" -d '{"sentence": "錯覚ではありません。"}'
+```
 
 ## Features
-
-FastAPI backed services:
 
 ### `POST /tokenize`:
 
@@ -12,7 +30,7 @@ Split a Japanese sentence into tokens. E.g., with request payload
 
 ```json
 {
-  "sentence": "いえ、錯覚ではありません。"
+  "sentence": "錯覚ではありません。"
 }
 ```
 
@@ -21,21 +39,7 @@ Response
 ```json
 [
   {
-    "lemma": "言う",
-    "surface": "いえ",
-    "pos": "verb",
-    "pron_lemma": "イエル",
-    "pron": "イエ",
-    "pos_ja": "動詞",
-    "meanings": null
-  },
-  {
-    "lemma": "、",
-    "surface": "、",
-    "pos": "",
-    "pron_lemma": "*",
-    "pron": "*",
-    "pos_ja": "補助記号",
+    "lemma": "錯覚",
     "meanings": null
   },
   {
@@ -74,33 +78,7 @@ Response
     "pos_ja": "動詞",
     "meanings": null
   },
-  {
-    "lemma": "ます",
-    "surface": "ませ",
-    "pos": "auxiliary",
-    "pron_lemma": "マス",
-    "pron": "マセ",
-    "pos_ja": "助動詞",
-    "meanings": null
-  },
-  {
-    "lemma": "ず",
-    "surface": "ん",
-    "pos": "auxiliary",
-    "pron_lemma": "ヌ",
-    "pron": "ン",
-    "pos_ja": "助動詞",
-    "meanings": null
-  },
-  {
-    "lemma": "。",
-    "surface": "。",
-    "pos": "",
-    "pron_lemma": "*",
-    "pron": "*",
-    "pos_ja": "補助記号",
-    "meanings": null
-  }
+  ...
 ]
 ```
 
@@ -210,6 +188,8 @@ Response
 
 1. Get the image: `docker pull hosdce/janlp:latest`
 1. Start the service: e.g., `docker run janlp`
+
+> If you're trying to rebuild the image, mind that the unidic need to be download first and put the dicdir/ at code root.
 
 TODO:
 
