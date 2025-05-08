@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "janlp"  # the directory of the project source root (here `janlp`)
-version = "0.1.0"
+name = "janlp"
+version = "0.4.2"
 description = "A FastAPI application for Japanese tokenization and dictionary lookup"
 authors = ["Hao Wang <hwang.phy@gmail.com>"]
 
