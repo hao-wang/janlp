@@ -21,7 +21,7 @@ RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python
 
 COPY ./pyproject.toml ./poetry.lock* ./
 
-RUN bash -c "poetry install"
+RUN bash -c "poetry install --no-root"
 
 
 COPY ./janlp ./janlp
