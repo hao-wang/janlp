@@ -1,8 +1,10 @@
 import logging
+import sqlite3
 from pathlib import Path
 
 import fugashi
 import jaconv
+import jamdict_data
 import unidic
 from jamdict import Jamdict
 
@@ -27,7 +29,9 @@ def init_tagger():
 
 def init_jamdict():
     global jam
-    jam = Jamdict()
+    db_path = Path(jamdict_data.__file__).parent / "jamdict.db"
+    conn = sqlite3.connect(db_path, check_same_thread=False)
+    jam = Jamdict(db_conn=conn)
 
 
 def tokenize(sentence: str) -> list[Token]:
