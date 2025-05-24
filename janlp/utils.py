@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+import threading
 from pathlib import Path
 
 import fugashi
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # TODO: jam.lookup() may give char's meaning if the word is not found. Deal with that.
-jam = None
+_thread_local = threading.local()
 dic_dir = Path.cwd() / "dicdir"
 if dic_dir.exists():
     unidic.DICDIR = dic_dir
@@ -28,10 +29,20 @@ def init_tagger():
 
 
 def init_jamdict():
-    global jam
-    db_path = Path(jamdict_data.__file__).parent / "jamdict.db"
-    conn = sqlite3.connect(db_path, check_same_thread=False)
-    jam = Jamdict(db_conn=conn)
+    """Initialize jamdict - this will be called once at startup"""
+    # We don't create the connection here anymore
+    # Instead, we'll create connections per thread as needed
+    pass
+
+
+def _get_jamdict():
+    """Get a thread-local jamdict instance"""
+    if not hasattr(_thread_local, 'jam'):
+        db_path = Path(jamdict_data.__file__).parent / "jamdict.db"
+        # Create a new connection for this thread
+        conn = sqlite3.connect(db_path, check_same_thread=True)
+        _thread_local.jam = Jamdict(db_conn=conn)
+    return _thread_local.jam
 
 
 def tokenize(sentence: str) -> list[Token]:
@@ -93,6 +104,7 @@ def lookup_word(
         pron_lemma = jaconv.kata2hira(pron_lemma)
 
     result = None
+    jam = _get_jamdict()
     if lemma:
         result = jam.lookup(lemma)
     elif surface:
