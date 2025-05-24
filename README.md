@@ -8,10 +8,10 @@ Clone the repo and run in the project root:
 
 ```bash
 # Install dependencies
-poetry install
+poetry install && poetry run python -m unidic download
 
 # Run the service
-fastapi run janlp/main.py
+uvicorn janlp.main:app
 ```
 
 You can visit the api's at `http://localhost:8000/docs`
@@ -189,8 +189,5 @@ Response
 1. Get the image: `docker pull hosdce/janlp:latest`
 1. Start the service: e.g., `docker run janlp`
 
+### Build docker image yourself
 > If you're trying to rebuild the image, mind that the unidic need to be download first and put the dicdir/ at code root.
-
-TODO:
-
-1. build image & start service with `docker compose up`
