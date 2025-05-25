@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "janlp"
-version = "0.4.4"
+version = "0.4.5"
 description = "A FastAPI application for Japanese tokenization and dictionary lookup"
 authors = ["Hao Wang <hwang.phy@gmail.com>"]
 
