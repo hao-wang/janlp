@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -6,11 +7,26 @@ from pydantic import BaseModel
 from janlp import utils
 from janlp.models import Token, TokenLookupResult, TokenQuery, TokenWithMeanings
 
-app = FastAPI()
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup: Initialize tagger and jamdict
+    logger.info("Initializing tagger and jamdict...")
+    utils.init_tagger()
+    utils.init_jamdict()
+    logger.info("Initialization complete.")
+    
+    yield
+    
+    # Shutdown: cleanup if needed
+    logger.info("Application shutting down.")
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 class SentenceInput(BaseModel):
@@ -46,10 +62,3 @@ def fetch_glossary(input: SentenceInput):
     except Exception as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Tagger has a startup cost (loading dict etc.), so run once at the very beginning."""
-    utils.init_tagger()
-    utils.init_jamdict()

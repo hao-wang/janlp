@@ -6,7 +6,7 @@ set -e
 # Get version from pyproject.toml
 VERSION=$(grep "^version = " pyproject.toml | cut -d'"' -f2)
 # Ask for confirmation
-echo "About to publish version $VERSION"
+echo "About to publish version v$VERSION"
 read -p "Continue? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -35,7 +35,7 @@ echo "构建 Docker 镜像..."
 docker compose build
 
 # Tag with version
-docker tag $DOCKER_USERNAME/janlp:latest $DOCKER_USERNAME/janlp:$VERSION
+docker tag $DOCKER_USERNAME/janlp:latest $DOCKER_USERNAME/janlp:v$VERSION
 
 # 推送镜像
 echo "推送镜像到 Docker Hub..."
