@@ -3,6 +3,19 @@
 # 确保脚本在错误时退出
 set -e
 
+# Get version from pyproject.toml
+VERSION=$(grep "^version = " pyproject.toml | cut -d'"' -f2)
+# Ask for confirmation
+echo "About to publish version $VERSION"
+read -p "Continue? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    echo "Operation cancelled"
+    exit 1
+fi
+
+
 # 检查是否提供了 Docker 用户名
 if [ -z "$1" ]; then
     echo "请提供 Docker Hub 用户名"
@@ -22,7 +35,7 @@ echo "构建 Docker 镜像..."
 docker compose build
 
 # Tag with version
-docker tag $DOCKER_USERNAME/janlp:latest $DOCKER_USERNAME/janlp:0.4.3
+docker tag $DOCKER_USERNAME/janlp:latest $DOCKER_USERNAME/janlp:$VERSION
 
 # 推送镜像
 echo "推送镜像到 Docker Hub..."
