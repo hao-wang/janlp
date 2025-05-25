@@ -1,7 +1,9 @@
 import logging
 import sqlite3
 import threading
+import time
 from pathlib import Path
+from typing import Optional
 
 import fugashi
 import jaconv
@@ -16,6 +18,10 @@ logger.setLevel(logging.INFO)
 
 # TODO: jam.lookup() may give char's meaning if the word is not found. Deal with that.
 _thread_local = threading.local()
+_db_path: Optional[Path] = None
+_init_lock = threading.Lock()
+_preload_done = False
+
 dic_dir = Path.cwd() / "dicdir"
 if dic_dir.exists():
     unidic.DICDIR = dic_dir
@@ -29,19 +35,76 @@ def init_tagger():
 
 
 def init_jamdict():
-    """Initialize jamdict - this will be called once at startup"""
-    # We don't create the connection here anymore
-    # Instead, we'll create connections per thread as needed
-    pass
+    """Initialize jamdict - prepare database path and do global setup"""
+    global _db_path, _preload_done
+    with _init_lock:
+        if _db_path is None:
+            _db_path = Path(jamdict_data.__file__).parent / "jamdict.db"
+            logger.info(f"Jamdict database path: {_db_path}")
+            logger.info(f"Database size: {_db_path.stat().st_size / 1024 / 1024:.1f} MB")
+            
+        if not _preload_done:
+            # 预热：在主线程创建一个连接来预加载一些数据
+            logger.info("Pre-loading jamdict data...")
+            try:
+                start_time = time.time()
+                conn = sqlite3.connect(_db_path, check_same_thread=True)
+                
+                # 应用 SQLite 优化
+                _optimize_sqlite_connection(conn)
+                
+                jam = Jamdict(db_conn=conn)
+                
+                # 执行多次查找来预加载更多索引和缓存
+                test_words = ["こんにちは", "ありがとう", "さようなら", "おはよう", "こんばんは"]
+                for word in test_words:
+                    jam.lookup(word)
+                
+                conn.close()
+                preload_time = time.time() - start_time
+                logger.info(f"Jamdict pre-loading complete in {preload_time:.3f}s")
+                _preload_done = True
+            except Exception as e:
+                logger.warning(f"Pre-loading failed: {e}")
+
+
+def _optimize_sqlite_connection(conn):
+    """Apply SQLite performance optimizations"""
+    # 使用 WAL 模式提高并发性能
+    conn.execute("PRAGMA journal_mode=WAL")
+    # 平衡安全性和性能
+    conn.execute("PRAGMA synchronous=NORMAL")
+    # 增加缓存大小 (10MB)
+    conn.execute("PRAGMA cache_size=10000")
+    # 临时数据存储在内存中
+    conn.execute("PRAGMA temp_store=MEMORY")
+    # 增加内存映射大小 (256MB)
+    conn.execute("PRAGMA mmap_size=268435456")
+    # 优化查询计划器
+    conn.execute("PRAGMA optimize")
 
 
 def _get_jamdict():
-    """Get a thread-local jamdict instance"""
+    """Get a thread-local jamdict instance with optimized initialization"""
     if not hasattr(_thread_local, 'jam'):
-        db_path = Path(jamdict_data.__file__).parent / "jamdict.db"
-        # Create a new connection for this thread
-        conn = sqlite3.connect(db_path, check_same_thread=True)
+        if _db_path is None:
+            init_jamdict()
+        
+        thread_id = threading.current_thread().ident
+        logger.debug(f"Creating new jamdict connection for thread {thread_id}")
+        start_time = time.time()
+        
+        # 为当前线程创建新的连接
+        conn = sqlite3.connect(_db_path, check_same_thread=True)
+        
+        # 应用 SQLite 优化
+        _optimize_sqlite_connection(conn)
+        
         _thread_local.jam = Jamdict(db_conn=conn)
+        
+        init_time = time.time() - start_time
+        logger.info(f"Thread {thread_id} jamdict initialized in {init_time:.3f}s")
+    
     return _thread_local.jam
 
 

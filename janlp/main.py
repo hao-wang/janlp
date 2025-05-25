@@ -18,6 +18,15 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing tagger and jamdict...")
     utils.init_tagger()
     utils.init_jamdict()
+    
+    # 预热：执行一次查找来预加载缓存
+    logger.info("Warming up jamdict cache...")
+    try:
+        utils.lookup_word(lemma="こんにちは")  # 简单的预热查找
+        logger.info("Warmup complete.")
+    except Exception as e:
+        logger.warning(f"Warmup failed: {e}")
+    
     logger.info("Initialization complete.")
     
     yield
