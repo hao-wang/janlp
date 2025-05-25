@@ -191,3 +191,5 @@ Response
 
 ### Build docker image yourself
 > If you're trying to rebuild the image, mind that the unidic need to be download first and put the dicdir/ at code root.
+
+执行 `chmod +x publish.sh`

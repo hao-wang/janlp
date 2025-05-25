@@ -1,5 +1,6 @@
 services:
   janlp:
+    image: ${DOCKER_USERNAME}/janlp:latest
     ports:
       - "8000:8000"
     build:
