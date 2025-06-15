@@ -128,6 +128,7 @@ def tokenize(sentence: str) -> list[Token]:
         "代名詞": "pronoun",
         "数詞": "numeral",
         "補助記号": "symbol",
+        "形状詞": "adverb"
     }
     result = tagger(sentence)
     tokens = [
