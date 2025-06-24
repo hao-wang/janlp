@@ -15,18 +15,9 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup: Initialize tagger and jamdict
-    logger.info("Initializing tagger and jamdict...")
+    logger.info("Initializing tagger and setting jamdict path...")
     utils.init_tagger()
-    utils.init_jamdict()
-    
-    # 预热：执行一次查找来预加载缓存
-    logger.info("Warming up jamdict cache...")
-    try:
-        utils.lookup_word(lemma="こんにちは")  # 简单的预热查找
-        logger.info("Warmup complete.")
-    except Exception as e:
-        logger.warning(f"Warmup failed: {e}")
-    
+    utils.init_jamdict_path()  # Set global DB path, connections will be thread-local
     logger.info("Initialization complete.")
     
     yield

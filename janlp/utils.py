@@ -1,7 +1,6 @@
 import logging
 import sqlite3
 import threading
-import time
 from pathlib import Path
 from typing import Optional
 
@@ -17,10 +16,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # TODO: jam.lookup() may give char's meaning if the word is not found. Deal with that.
-_thread_local = threading.local()
 _db_path: Optional[Path] = None
-_init_lock = threading.Lock()
-_preload_done = False
+# Thread-local storage to hold a Jamdict instance per thread
+_thread_local = threading.local()
+
+# Maximum number of times a Jamdict instance can be used before it is recreated
+JAMDICT_INSTANCE_USAGE_LIMIT = 200
 
 dic_dir = Path.cwd() / "dicdir"
 if dic_dir.exists():
@@ -34,78 +35,58 @@ def init_tagger():
     tagger = fugashi.Tagger()
 
 
-def init_jamdict():
-    """Initialize jamdict - prepare database path and do global setup"""
-    global _db_path, _preload_done
-    with _init_lock:
+def init_jamdict_path():
+    """Sets the global database path. To be called once at application startup."""
+    global _db_path
+    if _db_path is None:
+        _db_path = Path(jamdict_data.__file__).parent / "jamdict.db"
+        logger.info(f"Jamdict database path set: {_db_path}")
+
+
+def _get_jamdict() -> Jamdict:
+    """
+    Returns a thread-local Jamdict instance.
+    If an instance does not exist for the current thread, it creates one.
+    To prevent unbounded memory growth from Jamdict's internal cache,
+    the instance is periodically discarded and recreated.
+    """
+    jam = getattr(_thread_local, 'jam', None)
+    usage_count = getattr(_thread_local, 'usage_count', 0)
+
+    if jam is None or usage_count >= JAMDICT_INSTANCE_USAGE_LIMIT:
+        if jam is not None:
+            logger.info(f"\n\nRecreating Jamdict instance for thread {threading.current_thread().name} after {usage_count} uses.----\n\n")
+        else:
+            logger.info(f"Creating new Jamdict instance for thread: {threading.current_thread().name}")
+
         if _db_path is None:
-            _db_path = Path(jamdict_data.__file__).parent / "jamdict.db"
-            logger.info(f"Jamdict database path: {_db_path}")
-            logger.info(f"Database size: {_db_path.stat().st_size / 1024 / 1024:.1f} MB")
+            raise RuntimeError("Jamdict database path not initialized. Call init_jamdict_path() at startup.")
             
-        if not _preload_done:
-            # 预热：在主线程创建一个连接来预加载一些数据
-            logger.info("Pre-loading jamdict data...")
-            try:
-                start_time = time.time()
-                conn = sqlite3.connect(_db_path, check_same_thread=True)
-                
-                # 应用 SQLite 优化
-                _optimize_sqlite_connection(conn)
-                
-                jam = Jamdict(db_conn=conn)
-                
-                # 执行多次查找来预加载更多索引和缓存
-                test_words = ["こんにちは", "ありがとう", "さようなら", "おはよう", "こんばんは"]
-                for word in test_words:
-                    jam.lookup(word)
-                
-                conn.close()
-                preload_time = time.time() - start_time
-                logger.info(f"Jamdict pre-loading complete in {preload_time:.3f}s")
-                _preload_done = True
-            except Exception as e:
-                logger.warning(f"Pre-loading failed: {e}")
+        # Each thread creates its own connection to the DB file.
+        conn = sqlite3.connect(_db_path, check_same_thread=True)
+        _optimize_sqlite_connection(conn)
+        jam = Jamdict(db_conn=conn)
+        _thread_local.jam = jam
+        _thread_local.usage_count = 0
+    
+    _thread_local.usage_count += 1
+    return jam
 
 
 def _optimize_sqlite_connection(conn):
     """Apply SQLite performance optimizations"""
-    # 使用 WAL 模式提高并发性能
+    # Use WAL mode to improve concurrency performance
     conn.execute("PRAGMA journal_mode=WAL")
-    # 平衡安全性和性能
+    # Balance security and performance
     conn.execute("PRAGMA synchronous=NORMAL")
-    # 增加缓存大小 (10MB)
+    # Increase cache size (10MB)
     conn.execute("PRAGMA cache_size=10000")
-    # 临时数据存储在内存中
+    # Temporary data stored in memory
     conn.execute("PRAGMA temp_store=MEMORY")
-    # 增加内存映射大小 (256MB)
+    # Increase memory mapping size (256MB)
     conn.execute("PRAGMA mmap_size=268435456")
-    # 优化查询计划器
+    # Optimize query planner
     conn.execute("PRAGMA optimize")
-
-
-def _get_jamdict():
-    """Get a thread-local jamdict instance with optimized initialization"""
-    if not hasattr(_thread_local, 'jam'):
-        if _db_path is None:
-            init_jamdict()
-        
-        thread_id = threading.current_thread().ident
-        logger.debug(f"Creating new jamdict connection for thread {thread_id}")
-        start_time = time.time()
-        
-        # 为当前线程创建新的连接
-        conn = sqlite3.connect(_db_path, check_same_thread=True)
-        
-        # 应用 SQLite 优化
-        _optimize_sqlite_connection(conn)
-        
-        _thread_local.jam = Jamdict(db_conn=conn)
-        
-        init_time = time.time() - start_time
-        logger.info(f"Thread {thread_id} jamdict initialized in {init_time:.3f}s")
-    
-    return _thread_local.jam
 
 
 def tokenize(sentence: str) -> list[Token]:
